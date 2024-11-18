@@ -32,6 +32,7 @@ from .tensor_functions import (
     Sigmoid,
     Sum,
     View,
+    tensor,
 )
 
 
@@ -86,8 +87,7 @@ class Tensor:
         assert isinstance(v, TensorData)
         assert backend is not None
         self._tensor = v
-        self.size = self._tensor.size
-        self.dims = self._tensor.dims
+        # self.size and self.dims are properties, no need to assign them
         self.history = back
         self.backend = backend
 
@@ -106,6 +106,8 @@ class Tensor:
     def requires_grad_(self, x: bool) -> None:
         """Set the requires_grad flag."""
         self.history = History()
+
+    
 
     def requires_grad(self) -> bool:
         """Check if requires grad."""
@@ -300,6 +302,20 @@ class Tensor:
         """
         return self._tensor.shape
 
+    @property
+    def dims(self) -> int:
+        """Returns:
+        int: dimensionality of the tensor
+        """
+        return self._tensor.dims
+    
+    @property
+    def size(self) -> int:
+        """Returns:
+        int: size of the tensor
+        """
+        return self._tensor.size
+
     # Functions
 
     def __add__(self, b: TensorLike) -> Tensor:
@@ -398,18 +414,15 @@ class Tensor:
     # still must fix mean and view. and also permute
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Calculate the mean of the tensor elements."""
-        return self.sum(dim=dim) / operators.prod(
-            self.shape
-        )  # just use the sum one we have already
+        if dim is not None:
+            return self.sum(dim) / self.shape[dim]
+        else:
+            return self.sum() / self.size
 
     def view(self, *shape: int) -> Tensor:
         """Return a tensor with the same data but a different shape."""
-        return View.apply(
-            self, Tensor.make(list(shape), (len(shape),), backend=self.backend)
-        )
+        return View.apply(self, tensor(list(shape)))
 
-    def permute(self, *dims: int) -> Tensor:
+    def permute(self, *order: int) -> Tensor:
         """Return a tensor with its dimensions permuted."""
-        return Permute.apply(
-            self, Tensor.make(list(dims), (len(dims),), backend=self.backend)
-        )
+        return Permute.apply(self, tensor(list(order)))

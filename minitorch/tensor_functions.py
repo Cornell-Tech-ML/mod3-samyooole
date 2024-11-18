@@ -125,8 +125,11 @@ class Mul(Function):
     @staticmethod
     def backward(ctx: Context, d: Tensor) -> Tuple[Tensor, Tensor]:
         """Backward pass for Mul function"""
-        t1, t2 = ctx.saved_values
-        return d * t2, d * t1
+        a, b = ctx.saved_values
+        return (
+            d.f.mul_zip(b, d),
+            d.f.mul_zip(a, d)
+        )
 
 
 class Sigmoid(Function):

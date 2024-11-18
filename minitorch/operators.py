@@ -52,26 +52,26 @@ def is_close(a: float, b: float, abs_tol: float = 1e-2) -> bool:
 def sigmoid(x: float) -> float:
     """Sigmoid function"""
     if x >= 0.0:
-        z = exp(-x)
+        z = math.exp(-x)
         return 1.0 / (1.0 + z)
     else:
-        z = exp(x)
+        z = math.exp(x)
         return z / (1.0 + z)
 
 
 def sigmoid_back(x: float, y: float) -> float:
     """Sigmoid backwards derivative"""
     if x >= 0.0:
-        return (1.0 + exp(-x)) ** (-2.0) * exp(-x) * y
+        return (1.0 + math.exp(-x)) ** (-2.0) * math.exp(-x) * y
     else:
         return (
-            exp(x) * (-exp(x) * (1.0 + exp(x)) ** (-2.0) + (1.0 + exp(x)) ** (-1.0)) * y
+            math.exp(x) * (-math.exp(x) * (1.0 + math.exp(x)) ** (-2.0) + (1.0 + math.exp(x)) ** (-1.0)) * y
         )
 
 
 def relu(x: float) -> float:
     """ReLU function"""
-    return max(0.0, x)
+    return x if x > 0 else 0.0
 
 
 def log(x: float) -> float:
@@ -96,7 +96,7 @@ def log_back(x: float, y: float) -> float:
 
 def inv_back(x: float, y: float) -> float:
     """Computes the derivative of the reciprocal of the first argument, x, times a second argument, y"""
-    return y * neg(x ** (-2.0))
+    return y * -(x ** (-2.0))
 
 
 def relu_back(x: float, y: float) -> float:

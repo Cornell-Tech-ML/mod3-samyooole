@@ -12,7 +12,7 @@ from typing_extensions import TypeAlias
 
 from .operators import prod
 
-MAX_DIMS = 32
+MAX_DIMS = 128 # TODO: test what an appropriate maxdims is
 
 
 class IndexingError(RuntimeError):
@@ -46,12 +46,11 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
 
     """
-    final_index = 0
-
-    for idx, stride in enumerate(strides):
-        final_index += index[idx] * stride
-
-    return final_index
+    # staff implementation: compatibility with numba
+    position = 0
+    for ind, stride in zip(index, strides):
+        position += ind * stride
+    return position
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -67,32 +66,13 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    # shape is an object that could look like [4,5,2,3] - there are 4 dimensions to this tensor, and we have to
+    # use staff implementation to fit with numba
 
-    # following convention, we count up from the least significant element (rightmost)
-    # intuitively, that's like listing 0, 1, 2, 3 across the first row of columns, before going 4,5,6,7 across the next row of columns
-
-    list_of_modulos = []
-    modulo_value = 1
-    # print(ordinal)
-    # print(shape)
-
-    for shape_size in reversed(
-        shape
-    ):  # shape is a reverse iterator? if it's not, try putting reversed back on this
-        modulo_value *= shape_size
-        list_of_modulos.append(modulo_value)
-
-    list_of_modulos = reversed(list_of_modulos)
-
-    # print(list(list_of_modulos))
-
-    # in the example given above, this would create a list that looks like [120,30,6,3], and is the modulo value that we divide by in order to get the index accordingly
-
-    for i, modulo_value in enumerate(list_of_modulos):
-        out_index[i] = (ordinal % modulo_value) // (modulo_value // shape[i])
-
-    # raise NotImplementedError("Need to implement for Task 2.1")
+    cur_ord = ordinal + 0
+    for i in range(len(shape) - 1, -1, -1):
+        sh = shape[i]
+        out_index[i] = int(cur_ord % sh)
+        cur_ord = cur_ord // sh
 
 
 def broadcast_index(
@@ -116,13 +96,14 @@ def broadcast_index(
         None
 
     """
-    # Start from the rightmost dimension and work backwards
-    small_dim = len(shape)
-    for i in range(1, small_dim + 1):
-        if shape[-i] == 1:
-            out_index[-i] = 0
+    # staff implementation
+    for i, s in enumerate(shape):
+        if s > 1:
+            out_index[i] = big_index[i + (len(big_shape) - len(shape))]
         else:
-            out_index[-i] = big_index[-i]
+            out_index[i] = 0
+
+    return None
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -150,34 +131,27 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     # rule 3: any extra dimension of size 1 can only be added on the left side of the shape
 
-    reverse_index = 0
-    counter = 0
+    # staff implementation
 
-    broadcast_shape = []
-
-    # Reverse the shapes to align dimensions from the right
-    shape1 = shape1[::-1]
-    shape2 = shape2[::-1]
-
-    while counter < max(len(shape1), len(shape2)):
-        this_shape1 = shape1[reverse_index] if reverse_index < len(shape1) else 1
-        this_shape2 = shape2[reverse_index] if reverse_index < len(shape2) else 1
-
-        if this_shape1 == 1:
-            broadcast_shape.append(this_shape2)
-        elif this_shape2 == 1:
-            broadcast_shape.append(this_shape1)
-        elif this_shape1 == this_shape2:
-            broadcast_shape.append(this_shape1)
+    a, b = shape1, shape2
+    m = max(len(a), len(b))
+    c_rev = [0] * m
+    a_rev = list(reversed(a))
+    b_rev = list(reversed(b))
+    for i in range(m):
+        if i >= len(a):
+            c_rev[i] = b_rev[i]
+        elif i >= len(b):
+            c_rev[i] = a_rev[i]
         else:
-            raise IndexingError(
-                f"Shapes {shape1[::-1]} and {shape2[::-1]} cannot be broadcasted"
-            )
+            c_rev[i] = max(a_rev[i], b_rev[i])
 
-        counter += 1
-        reverse_index += 1
-
-    return tuple(reversed(broadcast_shape))
+            if a_rev[i] != c_rev[i] and a_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+            if b_rev[i] != c_rev[i] and b_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+            
+    return tuple(reversed(c_rev))
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
