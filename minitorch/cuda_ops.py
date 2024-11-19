@@ -339,7 +339,11 @@ def tensor_reduce(
             # Each thread processes one element along the reduction dimension
             reduce_size = a_shape[reduce_dim] # should give u say, 3
             padded_size = 1024  # Fixed size of shared memory
-
+            # Before loading data, check if the reduction function is multiplication
+            is_mult = fn(1.0, 1.0) == 1.0 and fn(2.0, 3.0) == 6.0
+            if is_mult:
+                # For multiplication, pad with 1s
+                reduce_value = 1.0
 
             # Load data into shared memory
             if pos < reduce_size:
