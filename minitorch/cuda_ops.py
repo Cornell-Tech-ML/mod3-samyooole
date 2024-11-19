@@ -364,7 +364,7 @@ def tensor_reduce(
                 if pos < stride and pos + stride < padded_size:
                     cache[pos] = fn(cache[pos], cache[pos + stride])
                 stride //= 2
-                cuda.syncthreads()
+            cuda.syncthreads()
 
             # Write the result to the output
             if pos == 0:
