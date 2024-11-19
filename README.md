@@ -1,23 +1,52 @@
 # MiniTorch Module 3
 
-## SPLIT on GPU
+## SPLIT on GPU, small (100)
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET split --RATE 0.05`
 
-Time per epoch:
+Epoch  0  loss  11.71592169513195 correct 37
+Seconds per epoch: 1.9775
+Epoch  10  loss  4.238489064733035 correct 39
+Seconds per epoch: 1.8452
+Epoch  20  loss  2.734213941715211 correct 45
+Seconds per epoch: 1.9120
+Epoch  30  loss  1.709370654773785 correct 46
+Seconds per epoch: 1.8245
+Epoch  40  loss  1.629217336770921 correct 47
+Seconds per epoch: 1.9075
+Epoch  50  loss  1.77757180655412 correct 49
+Seconds per epoch: 1.8244
+Epoch  60  loss  0.6427508047034225 correct 47
+Seconds per epoch: 1.9963
+Epoch  70  loss  0.7133347372152725 correct 50
+Seconds per epoch: 1.8989
+Epoch  80  loss  0.5306952427662641 correct 49
+Seconds per epoch: 1.8398
+Epoch  90  loss  0.986783643464922 correct 50
 
-Epoch  0  loss  6.883706312519709 correct 29
-Epoch  10  loss  2.9230063095761563 correct 41
-Epoch  20  loss  3.664909083632173 correct 44
-Epoch  30  loss  3.1416024456224823 correct 49
-Epoch  40  loss  0.6356824247725283 correct 50
-Epoch  50  loss  1.0563079298847204 correct 49
-Epoch  60  loss  1.2196865054624122 correct 50
-Epoch  70  loss  1.0536564699070163 correct 50
-Epoch  80  loss  0.4172288778711962 correct 50
-Epoch  90  loss  0.9439167559134193 correct 50
-Epoch  100  loss  0.7629942270531591 correct 50
+## SPLIT on CPU, small (100)
 
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND cpu --HIDDEN 100 --DATASET split --RATE 0.05`
+
+Epoch  0  loss  5.861840182385447 correct 30
+Seconds per epoch: 0.5386
+Epoch  10  loss  6.4109958493419485 correct 35
+Seconds per epoch: 0.1917
+Epoch  20  loss  5.085506780142132 correct 41
+Seconds per epoch: 0.1602
+Epoch  30  loss  4.537558021276699 correct 47
+Seconds per epoch: 0.1134
+Epoch  40  loss  4.899905025516269 correct 44
+Seconds per epoch: 0.1131
+Epoch  50  loss  2.5157733867288643 correct 49
+Seconds per epoch: 0.1132
+Epoch  60  loss  2.778839415648227 correct 47
+Seconds per epoch: 0.1145
+Epoch  70  loss  2.5462193180264947 correct 48
+Seconds per epoch: 0.1124
+Epoch  80  loss  2.762627953810265 correct 50
+Seconds per epoch: 0.1172
+Epoch  90  loss  1.1744962417740878 correct 49
 
 
 ## `python project/parallel_check.py` output
