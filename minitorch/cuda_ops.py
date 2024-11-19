@@ -334,53 +334,50 @@ def tensor_reduce(
 
 
 
-        if out_pos < out_size:  # One block handles a particular row/dimension
+        if out_pos < out_size:
+            # Determine reduce identity based on the function
+            if fn(0.0, 1.0) == 1.0:  # Multiplication
+                reduce_value = 1.0
+            elif fn(0.0, 0.0) == 0.0:  # Addition
+                reduce_value = 0.0
+            else:
+                # Default to first argument as identity
+                reduce_value = 0.0
+
+            # Allocate shared memory dynamically
             cache = cuda.shared.array(BLOCK_DIM, numba.float32)
             out_index = cuda.local.array(MAX_DIMS, numba.int32)
-            # Convert the output position to the input index
+
+            # Convert output position to input index
             to_index(out_pos, out_shape, out_index)
 
-            # Each thread processes one element along the reduction dimension
-            reduce_size = a_shape[reduce_dim] # should give u say, 3
-            padded_size = 1024  # Fixed size of shared memory
-            # Before loading data, check if the reduction function is multiplication
-            is_mult = fn(1.0, 1.0) == 1.0 and fn(2.0, 3.0) == 6.0
-            if is_mult:
-                # For multiplication, pad with 1s
-                reduce_value = 1.0
-
+            reduce_size = a_shape[reduce_dim]
+            
             # Load data into shared memory
             if pos < reduce_size:
                 out_index[reduce_dim] = pos
                 in_pos = index_to_position(out_index, a_strides)
                 cache[pos] = a_storage[in_pos]
             else:
-                # Pad shared memory with the reduce identity value
+                # Pad with reduction identity
                 cache[pos] = reduce_value
 
             cuda.syncthreads()
 
-            # Parallel reduction in shared memory
-            stride = padded_size // 2
+            # Parallel reduction
+            stride = BLOCK_DIM // 2
             while stride > 0:
-                
-                if pos < stride and pos + stride < padded_size:
+                if pos < stride and pos + stride < reduce_size:
                     cache[pos] = fn(cache[pos], cache[pos + stride])
                 stride //= 2
                 cuda.syncthreads()
 
-            # Write the result to the output
+            # Write result
             if pos == 0:
                 out[out_pos] = cache[0]
 
-            
-
-
-
-
-
-
         return
+
 
     return jit(_reduce)  # type: ignore
 
