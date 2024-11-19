@@ -175,16 +175,18 @@ def tensor_map(
     ) -> None:
         
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        in_index = cuda.local.array(MAX_DIMS, numba.int32)
 
         
         if i < out_size:
-            out_index = cuda.local.array(MAX_DIMS, numba.int32)
-            in_index = cuda.local.array(MAX_DIMS, numba.int32)
+            
             to_index(i, out_shape, out_index)
             broadcast_index(out_index, out_shape, in_shape, in_index)
             o = index_to_position(out_index, out_strides)
             j = index_to_position(in_index, in_strides)
             out[o] = fn(in_storage[j])
+
 
     return cuda.jit()(_map)  # type: ignore
 
@@ -226,10 +228,11 @@ def tensor_zip(
 
         
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        a_index = cuda.local.array(MAX_DIMS, numba.int32)
+        b_index = cuda.local.array(MAX_DIMS, numba.int32)
         if i < out_size:
-            out_index = cuda.local.array(MAX_DIMS, numba.int32)
-            a_index = cuda.local.array(MAX_DIMS, numba.int32)
-            b_index = cuda.local.array(MAX_DIMS, numba.int32)
+            
             to_index(i, out_shape, out_index)
             o = index_to_position(out_index, out_strides)
             broadcast_index(out_index, out_shape, a_shape, a_index)
@@ -336,55 +339,39 @@ def tensor_reduce(
     ) -> None:
         BLOCK_DIM = 1024
         
-        
+
+        cache = cuda.shared.array(BLOCK_DIM, numba.float32)
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
+        reduce_size = a_shape[reduce_dim]
+        reduce_stride = a_strides[reduce_dim]
 
 
 
         if out_pos < out_size:
-            # Determine reduce identity based on the function
-            if fn(0.0, 1.0) == 1.0:  # Multiplication
-                reduce_value = 1.0
-            elif fn(0.0, 0.0) == 0.0:  # Addition
-                reduce_value = 0.0
-            else:
-                # Default to first argument as identity
-                reduce_value = 0.0
-
-            # Allocate shared memory dynamically
-            cache = cuda.shared.array(BLOCK_DIM, numba.float32)
-            out_index = cuda.local.array(MAX_DIMS, numba.int32)
-
-            # Convert output position to input index
             to_index(out_pos, out_shape, out_index)
+            baseid = index_to_position(out_index, a_strides)
 
-            reduce_size = a_shape[reduce_dim]
+        if pos < reduce_size:
+            cache[pos] = fn(reduce_value, a_storage[baseid + pos * reduce_stride])
+        else:
+            cache[pos] = reduce_value
+
+        cuda.syncthreads()
+
+        treelevel = 1
+
+        while treelevel < BLOCK_DIM:
+            if pos % (2 * treelevel) == 0:
+                cache[pos] = fn(cache[pos], cache[pos + treelevel])
             
-            # Load data into shared memory
-            if pos < reduce_size:
-                out_index[reduce_dim] = pos
-                in_pos = index_to_position(out_index, a_strides)
-                cache[pos] = a_storage[in_pos]
-            else:
-                # Pad with reduction identity
-                cache[pos] = reduce_value
-
+            treelevel = treelevel * 2
             cuda.syncthreads()
 
-            # Parallel reduction
-            stride = BLOCK_DIM // 2
-            while stride > 0:
-                if pos < stride and pos + stride < reduce_size:
-                    cache[pos] = fn(cache[pos], cache[pos + stride])
-                stride //= 2
-                cuda.syncthreads()
 
-            # Write result
-            if pos == 0:
-                out[out_pos] = cache[0]
-
-        return
+        if pos == 0:
+            out[out_pos] = cache[0]
 
 
     return jit(_reduce)  # type: ignore
