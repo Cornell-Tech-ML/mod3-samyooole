@@ -365,35 +365,29 @@ def _tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
-    # Setup for parallelization over batch dimension
-    for i in range(out_shape[0]):  # Parallel over first dimension
-        # Handle batch strides
-        a_batch = i * a_batch_stride 
+    # Parallel over first dimension
+    for i in prange(out_shape[0]):
+        a_batch = i * a_batch_stride
         b_batch = i * b_batch_stride
-
+        
         # Middle dimension of output
         for j in range(out_shape[1]):
-            # Get position in a
-            a_inner = a_batch + j * a_strides[1]
-
             # Final dimension of output
             for k in range(out_shape[2]):
-                # Get position in b
-                b_inner = b_batch + k * b_strides[2]
-
-                # Compute dot product
+                # Compute dot product with no global writes in inner loop
                 acc = 0.0
+                
                 # Sum over contracting dimension
                 for l in range(a_shape[2]):
                     acc += (
-                        a_storage[a_inner + l * a_strides[2]] *  # Get a value 
-                        b_storage[b_inner + l * b_strides[1]]    # Get b value
+                        a_storage[a_batch + j * a_strides[1] + l * a_strides[2]] * 
+                        b_storage[b_batch + k * b_strides[2] + l * b_strides[1]]
                     )
                 
-                # Write to output
+                # Single global write after inner loops
                 out_pos = (
-                    i * out_strides[0] + 
-                    j * out_strides[1] + 
+                    i * out_strides[0] +
+                    j * out_strides[1] +
                     k * out_strides[2]
                 )
                 out[out_pos] = acc
