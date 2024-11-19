@@ -528,6 +528,10 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
+
+    # boundary check
+    if i >= out_shape[-2] or j >= out_shape[-1]:
+        return
     temp = 0.0
     for k in range(0, a_shape[-1], BLOCK_DIM):
         # Load data into shared memory
