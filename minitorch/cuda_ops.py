@@ -177,15 +177,15 @@ def tensor_map(
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         in_index = cuda.local.array(MAX_DIMS, numba.int32)
-
         
         if i < out_size:
-            
             to_index(i, out_shape, out_index)
             broadcast_index(out_index, out_shape, in_shape, in_index)
             o = index_to_position(out_index, out_strides)
             j = index_to_position(in_index, in_strides)
             out[o] = fn(in_storage[j])
+        
+
 
 
     return cuda.jit()(_map)  # type: ignore
@@ -337,40 +337,41 @@ def tensor_reduce(
         reduce_dim: int,
         reduce_value: float,
     ) -> None:
-        BLOCK_DIM = 1024
         
-
-        cache = cuda.shared.array(BLOCK_DIM, numba.float32)
+        BLOCK_DIM = 1024
+        cache = cuda.shared.array(BLOCK_DIM, numba.float64)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        a_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
-        reduce_size = a_shape[reduce_dim]
-        reduce_stride = a_strides[reduce_dim]
 
+        if out_pos >= out_size:
+            return
 
+        cache[pos] = reduce_value
 
-        if out_pos < out_size:
-            to_index(out_pos, out_shape, out_index)
-            baseid = index_to_position(out_index, a_strides)
+        to_index(out_pos, out_shape, out_index)
 
-        if pos < reduce_size:
-            cache[pos] = fn(reduce_value, a_storage[baseid + pos * reduce_stride])
-        else:
-            cache[pos] = reduce_value
+        for dim in range(len(out_shape)):
+            a_index[dim] = out_index[dim]
+
+        reduce_dim_size = a_shape[reduce_dim]
+        for d in range(pos, reduce_dim_size, BLOCK_DIM):
+            a_index[reduce_dim] = d
+            a_position = index_to_position(a_index, a_strides)
+            cache[pos] = fn(numba.float64(cache[pos]), a_storage[a_position])
 
         cuda.syncthreads()
 
-        treelevel = 1
-
-        while treelevel < BLOCK_DIM:
-            if pos % (2 * treelevel) == 0:
-                cache[pos] = fn(cache[pos], cache[pos + treelevel])
-            
-            treelevel = treelevel * 2
+        s = BLOCK_DIM // 2
+        while s > 0:
+            if pos < s:
+                cache[pos] = fn(cache[pos], cache[pos + s])
             cuda.syncthreads()
-
+            s //= 2
 
         if pos == 0:
+            out_pos = index_to_position(out_index, out_strides)
             out[out_pos] = cache[0]
 
 
