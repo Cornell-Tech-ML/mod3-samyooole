@@ -65,7 +65,12 @@ def sigmoid_back(x: float, y: float) -> float:
         return (1.0 + math.exp(-x)) ** (-2.0) * math.exp(-x) * y
     else:
         return (
-            math.exp(x) * (-math.exp(x) * (1.0 + math.exp(x)) ** (-2.0) + (1.0 + math.exp(x)) ** (-1.0)) * y
+            math.exp(x)
+            * (
+                -math.exp(x) * (1.0 + math.exp(x)) ** (-2.0)
+                + (1.0 + math.exp(x)) ** (-1.0)
+            )
+            * y
         )
 
 

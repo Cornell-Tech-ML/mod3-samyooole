@@ -126,10 +126,7 @@ class Mul(Function):
     def backward(ctx: Context, d: Tensor) -> Tuple[Tensor, Tensor]:
         """Backward pass for Mul function"""
         a, b = ctx.saved_values
-        return (
-            d.f.mul_zip(b, d),
-            d.f.mul_zip(a, d)
-        )
+        return (d.f.mul_zip(b, d), d.f.mul_zip(a, d))
 
 
 class Sigmoid(Function):
@@ -204,7 +201,7 @@ class Sum(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         """Backward pass for the Sum function."""
         a_shape, dim = ctx.saved_values
-        return grad_output, 0.0 # just propagating it backwards
+        return grad_output, 0.0  # just propagating it backwards
 
 
 class LT(Function):
@@ -465,6 +462,7 @@ def grad_central_difference(
     delta: Tensor = f(*vals1).sum() - f(*vals2).sum()
 
     return delta[0] / (2.0 * epsilon)
+
 
 ## TODO : here's the problem
 def grad_check(f: Any, *vals: Tensor) -> None:

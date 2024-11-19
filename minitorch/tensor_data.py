@@ -12,7 +12,7 @@ from typing_extensions import TypeAlias
 
 from .operators import prod
 
-MAX_DIMS = 16 # TODO: test what an appropriate maxdims is
+MAX_DIMS = 16  # TODO: test what an appropriate maxdims is
 
 
 class IndexingError(RuntimeError):
@@ -150,7 +150,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
                 raise IndexingError(f"Broadcast failure {a} {b}")
             if b_rev[i] != c_rev[i] and b_rev[i] != 1:
                 raise IndexingError(f"Broadcast failure {a} {b}")
-            
+
     return tuple(reversed(c_rev))
 
 

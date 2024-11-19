@@ -107,8 +107,6 @@ class Tensor:
         """Set the requires_grad flag."""
         self.history = History()
 
-    
-
     def requires_grad(self) -> bool:
         """Check if requires grad."""
         return self.history is not None
@@ -308,7 +306,7 @@ class Tensor:
         int: dimensionality of the tensor
         """
         return self._tensor.dims
-    
+
     @property
     def size(self) -> int:
         """Returns:

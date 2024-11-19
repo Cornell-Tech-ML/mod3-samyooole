@@ -169,22 +169,19 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-
         ## Optimization (3): check if tensors are stride-aligned - if so, take a direct mapping "fast path"
 
         is_aligned = (
-            len(out_shape) == len(in_shape) and
-            np.array_equal(out_shape, in_shape) and
-            np.array_equal(out_strides, in_strides)
+            len(out_shape) == len(in_shape)
+            and np.array_equal(out_shape, in_shape)
+            and np.array_equal(out_strides, in_strides)
         )
 
-        if is_aligned: # fast route
+        if is_aligned:  # fast route
             for i in prange(len(out)):
                 out[i] = fn(in_storage[i])
-        else: # slow route
-            
-
-            for i in prange(len(out)): ## Optimization (1): parallel loops
+        else:  # slow route
+            for i in prange(len(out)):  ## Optimization (1): parallel loops
                 ## Optimization (2): Numpy buffers: //pre-allocated// numpy arrays used to store indices during computation
                 out_index: Index = np.zeros(MAX_DIMS, np.int32)
                 in_index: Index = np.zeros(MAX_DIMS, np.int32)
@@ -193,7 +190,6 @@ def tensor_map(
                 o = index_to_position(out_index, out_strides)
                 j = index_to_position(in_index, in_strides)
                 out[o] = fn(in_storage[j])
-
 
     return njit(_map, parallel=True)  # type: ignore
 
@@ -232,21 +228,22 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-
         is_aligned = (
-        len(out_shape) == len(a_shape) == len(b_shape) and
-        np.array_equal(out_shape, a_shape) and np.array_equal(out_shape, b_shape) and
-        np.array_equal(out_strides, a_strides) and np.array_equal(out_strides, b_strides)
+            len(out_shape) == len(a_shape) == len(b_shape)
+            and np.array_equal(out_shape, a_shape)
+            and np.array_equal(out_shape, b_shape)
+            and np.array_equal(out_strides, a_strides)
+            and np.array_equal(out_strides, b_strides)
         )
 
-        if is_aligned: ## Optimization (3): avoid indexing fast path
+        if is_aligned:  ## Optimization (3): avoid indexing fast path
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
         else:
-            
-
-            for i in prange(len(out)): ## Optimization (1): main loop in parallel
-                out_index: Index = np.zeros(MAX_DIMS, np.int32) ## Optimization (2): all indices use numpy buffers
+            for i in prange(len(out)):  ## Optimization (1): main loop in parallel
+                out_index: Index = np.zeros(
+                    MAX_DIMS, np.int32
+                )  ## Optimization (2): all indices use numpy buffers
                 a_index: Index = np.zeros(MAX_DIMS, np.int32)
                 b_index: Index = np.zeros(MAX_DIMS, np.int32)
                 to_index(i, out_shape, out_index)
@@ -293,27 +290,25 @@ def tensor_reduce(
         # Pre-calculate the stride for the reduction dimension
         reduce_size = a_shape[reduce_dim]
         reduce_stride = a_strides[reduce_dim]
-        
-        
-        
+
         # Optimization (1): main loop in parallel
         for i in prange(len(out)):
             # Optimization (2): use numpy buffers for indices
             out_index = np.zeros(MAX_DIMS, np.int32)
             to_index(i, out_shape, out_index)
             o = index_to_position(out_index, out_strides)
-            
+
             # Calculate base position for a_storage
             base = index_to_position(out_index, a_strides)
-            
+
             # Initialize accumulator with first value
             acc = a_storage[base]
-            
+
             # Optimization (3): inner loop with direct indexing
             for s in range(1, reduce_size):
                 j = base + s * reduce_stride
                 acc = fn(acc, float(a_storage[j]))
-                
+
             # Single write to output
             out[o] = acc
 
@@ -370,27 +365,23 @@ def _tensor_matrix_multiply(
     for i in prange(out_shape[0]):
         a_batch = i * a_batch_stride
         b_batch = i * b_batch_stride
-        
+
         # Middle dimension of output
         for j in range(out_shape[1]):
             # Final dimension of output
             for k in range(out_shape[2]):
                 # Compute dot product with no global writes in inner loop
                 acc = 0.0
-                
+
                 # Sum over contracting dimension
                 for l in range(a_shape[2]):
                     acc += (
-                        a_storage[a_batch + j * a_strides[1] + l * a_strides[2]] * 
-                        b_storage[b_batch + k * b_strides[2] + l * b_strides[1]]
+                        a_storage[a_batch + j * a_strides[1] + l * a_strides[2]]
+                        * b_storage[b_batch + k * b_strides[2] + l * b_strides[1]]
                     )
-                
+
                 # Single global write after inner loops
-                out_pos = (
-                    i * out_strides[0] +
-                    j * out_strides[1] +
-                    k * out_strides[2]
-                )
+                out_pos = i * out_strides[0] + j * out_strides[1] + k * out_strides[2]
                 out[out_pos] = acc
 
 
