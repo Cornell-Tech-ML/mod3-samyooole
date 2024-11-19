@@ -271,22 +271,24 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     pos = cuda.threadIdx.x # specifies the position 
 
     if i < size:
-        if pos < BLOCK_DIM: ## 
-            cache[pos] = a[i % BLOCK_DIM] # populate the shared memory: can imagine it as, for the 0th block, filling it with a1, a2, a3, ... ; and for the 1st block, a32, a33, ...
+        cache[pos] = a[i]
+    else:
+        cache[pos] = 0.0
         
-        cuda.syncthreads() # memory fence
+    cuda.syncthreads() # memory fence
 
-        # Tree based parallel reduction within each block
-        stride = BLOCK_DIM // 2
-        while stride > 0:
-            if pos < stride:
-                cache[pos] = cache[pos] + cache[pos + stride]
-            stride //= 2
-            cuda.syncthreads()
+    # Tree based parallel reduction within each block
+    stride = BLOCK_DIM // 2
+    while stride > 0:
+        if pos < stride:
+            cache[pos] = cache[pos] + cache[pos + stride]
+        cuda.syncthreads()
+        stride //= 2
+        
 
-        # The first thread in each block writes the result
-        if pos == 0:
-            out[cuda.blockIdx.x] = cache[0]
+    # The first thread in each block writes the result
+    if pos == 0:
+        out[cuda.blockIdx.x] = cache[0]
         
         
 
