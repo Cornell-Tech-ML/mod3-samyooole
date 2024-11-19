@@ -1,5 +1,24 @@
 # MiniTorch Module 3
 
+## Timing differences (prove that GPU operations lead to speedups on large matrix operations)
+
+Timing summary
+Size: 64
+    fast: 0.00359
+    gpu: 0.00680
+Size: 128
+    fast: 0.01679
+    gpu: 0.01562
+Size: 256
+    fast: 0.10427
+    gpu: 0.07443
+Size: 512
+    fast: 1.08795
+    gpu: 0.22570
+Size: 1024
+    fast: 7.98068
+    gpu: 1.08512
+
 ## SIMPLE on GPU, small (100)
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET simple --RATE 0.1`
