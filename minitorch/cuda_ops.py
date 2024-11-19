@@ -266,22 +266,29 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     """  # noqa: D404
     BLOCK_DIM = 32
 
-    cache = cuda.shared.array(BLOCK_DIM, numba.float64)
-    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    pos = cuda.threadIdx.x
+    cache = cuda.shared.array(BLOCK_DIM, numba.float64) # shared memory for a particular block
+    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x # specifies the overall index to be written out
+    pos = cuda.threadIdx.x # specifies the position 
 
     if i < size:
         if pos < BLOCK_DIM: ## 
-            cache[pos] = a[i] # populate the shared memory: can imagine it as, for the 0th block, filling it with a1, a2, a3, ... ; and for the 1st block, a32, a33, ...
+            cache[pos] = a[i % BLOCK_DIM] # populate the shared memory: can imagine it as, for the 0th block, filling it with a1, a2, a3, ... ; and for the 1st block, a32, a33, ...
         
         cuda.syncthreads() # memory fence
-        
-        # Simple summation for the thread
+
+        # Tree based parallel reduction within each block
+        stride = BLOCK_DIM // 2
+        while stride > 0:
+            if pos < stride:
+                cache[pos] = cache[pos] + cache[pos + stride]
+            stride //= 2
+            cuda.syncthreads()
+
+        # The first thread in each block writes the result
         if pos == 0:
-            sum_val = 0.0
-            for idx in range(BLOCK_DIM):
-                sum_val += cache[idx]
-                out[cuda.blockIdx.x] = sum_val
+            out[cuda.blockIdx.x] = cache[0]
+        
+        
 
 
 jit_sum_practice = cuda.jit()(_sum_practice)
