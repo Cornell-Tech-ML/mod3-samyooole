@@ -332,29 +332,34 @@ def tensor_reduce(
 
 
 
-        if out_pos < out_size: # one block takes a particular dimension to reduce over
+        if out_pos < out_size:  # One block handles a particular row/dimension
             # Convert the output position to the input index
             to_index(out_pos, out_shape, out_index)
-            
-            # Each thread in the block processes one element along the reduction dimension
-            out_index[reduce_dim] = pos
-            
-            # Get the position in the input storage
-            in_pos = index_to_position(out_index, a_strides)
-            
-            # Fill shared memory if within bounds of the reduction dimension
-            if pos < a_shape[reduce_dim]:
+
+            # Each thread processes one element along the reduction dimension
+            reduce_size = a_shape[reduce_dim]
+            padded_size = 2 ** (reduce_size - 1).bit_length()
+
+            # Load data into shared memory
+            if pos < reduce_size:
+                out_index[reduce_dim] = pos
+                in_pos = index_to_position(out_index, a_strides)
                 cache[pos] = a_storage[in_pos]
             else:
+                # Pad shared memory with the reduce identity value
                 cache[pos] = reduce_value
 
             cuda.syncthreads()
 
             # Parallel reduction in shared memory
-            for stride in range(BLOCK_DIM // 2, 0, -1):
-                if pos < stride:
+            stride = padded_size // 2
+            while stride > 0:
+                if pos < stride and pos + stride < padded_size:
                     cache[pos] += cache[pos + stride]
-            
+                stride //= 2
+                cuda.syncthreads()
+
+            # Write the result to the output
             if pos == 0:
                 out[out_pos] = cache[0]
 
