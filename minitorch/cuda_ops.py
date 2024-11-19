@@ -332,7 +332,7 @@ def tensor_reduce(
 
 
 
-        if out_pos < len(out_shape): # one block takes a particular dimension to reduce over
+        if out_pos < out_size: # one block takes a particular dimension to reduce over
             # Convert the output position to the input index
             to_index(out_pos, out_shape, out_index)
             
