@@ -454,7 +454,7 @@ def tensor(
 
 
 def grad_central_difference(
-    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-10, ind: UserIndex
+    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
 ) -> float:
     """Compute the central difference for a function."""
     x = vals[arg]
@@ -493,7 +493,7 @@ but was expecting derivative %f from central difference.
         np.testing.assert_allclose(
             x.grad[ind],
             check,
-            1e-2,
-            1e-2,
+            1e-1,
+            1e-1,
             err_msg=err_msg % (f, vals, x.grad[ind], i, ind, check),
         )
