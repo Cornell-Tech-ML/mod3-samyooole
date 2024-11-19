@@ -222,48 +222,7 @@ def tensor_zip(
     ) -> None:
         
         # Motivation: one tensor could be smaller and result in many redundant global reads in a zip operation
-        """ #this idea doesn't work super well though!
-        # Determine which tensor is smaller (we'll use shared memory for the smaller one)
-        is_a_smaller = reduce(lambda x, y: x * y, a_shape) <= reduce(lambda x, y: x * y, b_shape)
 
-        MAX_THREADS = 1024
-        shared = cuda.shared.array(MAX_THREADS, numba.float32)  # Shared memory buffer
-        out_index = cuda.local.array(MAX_DIMS, numba.int32)
-        a_index = cuda.local.array(MAX_DIMS, numba.int32)
-        b_index = cuda.local.array(MAX_DIMS, numba.int32)
-
-        i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-        tx = cuda.threadIdx.x
-
-        
-        if i < out_size:
-            to_index(i, out_shape, out_index)
-            o = index_to_position(out_index, out_strides)
-
-            # Load the smaller tensor into shared memory
-            if is_a_smaller:
-                broadcast_index(out_index, out_shape, a_shape, a_index)
-                j = index_to_position(a_index, a_strides)
-                if tx < len(a_storage):
-                    shared[tx] = a_storage[j]
-                cuda.syncthreads()
-
-                # Use shared memory for smaller tensor (a), and global memory for larger tensor (b)
-                broadcast_index(out_index, out_shape, b_shape, b_index)
-                k = index_to_position(b_index, b_strides)
-                out[o] = fn(shared[tx], b_storage[k])
-            else:
-                broadcast_index(out_index, out_shape, b_shape, b_index)
-                k = index_to_position(b_index, b_strides)
-                if tx < len(b_storage):
-                    shared[tx] = b_storage[k]
-                cuda.syncthreads()
-
-                # Use shared memory for smaller tensor (b), and global memory for larger tensor (a)
-                broadcast_index(out_index, out_shape, a_shape, a_index)
-                j = index_to_position(a_index, a_strides)
-                out[o] = fn(a_storage[j], shared[tx])
-        """
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         a_index = cuda.local.array(MAX_DIMS, numba.int32)
         b_index = cuda.local.array(MAX_DIMS, numba.int32)
@@ -365,35 +324,42 @@ def tensor_reduce(
         reduce_dim: int,
         reduce_value: float,
     ) -> None:
-        BLOCK_DIM = 256  # Reduced from 1024
-        MAX_DIMS = 4     # Added explicit definition
-        
+        BLOCK_DIM = 1024
         cache = cuda.shared.array(BLOCK_DIM, numba.float32)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
-        
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
-        
-        if out_pos < out_size:
-            # Safer indexing and bounds checking
-            if pos < BLOCK_DIM and out_pos * BLOCK_DIM + pos < a_shape[reduce_dim]:
-                to_index(out_pos * BLOCK_DIM + pos, a_shape, out_index)
-                out_index[reduce_dim] = out_pos * BLOCK_DIM + pos
-                a_pos = index_to_position(out_index, a_strides)
-                cache[pos] = a_storage[a_pos]
+
+
+
+        if out_pos < len(out_shape): # one block takes a particular dimension to reduce over
+            # Convert the output position to the input index
+            to_index(out_pos, out_shape, out_index)
+            
+            # Each thread in the block processes one element along the reduction dimension
+            out_index[reduce_dim] = pos
+            
+            # Get the position in the input storage
+            in_pos = index_to_position(out_index, a_strides)
+            
+            # Fill shared memory if within bounds of the reduction dimension
+            if pos < a_shape[reduce_dim]:
+                cache[pos] = a_storage[in_pos]
             else:
                 cache[pos] = reduce_value
-            
+
             cuda.syncthreads()
-            
-            # Parallel reduction
+
+            # Parallel reduction in shared memory
             for stride in range(BLOCK_DIM // 2, 0, -1):
                 if pos < stride:
-                    cache[pos] = fn(cache[pos], cache[pos + stride])
-                cuda.syncthreads()
+                    cache[pos] += cache[pos + stride]
             
             if pos == 0:
                 out[out_pos] = cache[0]
+
+            
+
 
 
 
