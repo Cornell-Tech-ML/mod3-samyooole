@@ -531,31 +531,46 @@ def _tensor_matrix_multiply(
 
     assert a_shape[-1] == b_shape[-2]
 
-    
-    temp = 0.0
-    for k in range(0, a_shape[-1], BLOCK_DIM):
-        # Load data into shared memory
-        if i < out_shape[-2] and k + pj < a_shape[-1]:
-            a_shared[pi, pj] = a_storage[batch * a_batch_stride + i * a_strides[-2] + (k + pj) * a_strides[-1]]
+    # Initialize the output value
+    out_value = 0.0
+
+    # Iterate over all tiles
+    for block_i in range((a_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
+        # Load a tile of matrix A into shared memory
+        if i < a_shape[-2] and (block_i * BLOCK_DIM + pj) < a_shape[-1]:
+            a_shared[pi, pj] = a_storage[
+                batch * a_batch_stride
+                + i * a_strides[1]
+                + (block_i * BLOCK_DIM + pj) * a_strides[2]
+            ]
         else:
             a_shared[pi, pj] = 0.0
 
-        if j < out_shape[-1] and k + pi < b_shape[-2]:
-            b_shared[pi, pj] = b_storage[batch * b_batch_stride + (k + pi) * b_strides[-2] + j * b_strides[-1]]
+        # Load a tile of matrix B into shared memory
+        if j < b_shape[-1] and (block_i * BLOCK_DIM + pi) < b_shape[-2]:
+            b_shared[pi, pj] = b_storage[
+                batch * b_batch_stride
+                + (block_i * BLOCK_DIM + pi) * b_strides[1]
+                + j * b_strides[2]
+            ]
         else:
             b_shared[pi, pj] = 0.0
 
+        # Synchronize to ensure all threads have loaded their data into shared memory
         cuda.syncthreads()
 
-        # Compute the dot product for this sub-block
-        for n in range(BLOCK_DIM):
-            temp += a_shared[pi, n] * b_shared[n, pj]
+        # Compute partial product for the tile
+        for k in range(BLOCK_DIM):
+            out_value += a_shared[pi, k] * b_shared[k, pj]
 
+        # Synchronize again before loading the next tile
         cuda.syncthreads()
 
+    # Write the result to global memory
     if i < out_shape[-2] and j < out_shape[-1]:
-        out[batch * out_strides[0] + i * out_strides[-2] + j * out_strides[-1]] = temp
-
+        out[batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]] = (
+            out_value
+        )
 
 
 tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
