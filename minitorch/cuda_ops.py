@@ -556,4 +556,4 @@ def _tensor_matrix_multiply(
 
 
 
-tensor_matrix_multiply = jit(_tensor_matrix_multiply)
+tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
