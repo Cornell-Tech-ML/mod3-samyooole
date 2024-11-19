@@ -337,8 +337,8 @@ def tensor_reduce(
             to_index(out_pos, out_shape, out_index)
 
             # Each thread processes one element along the reduction dimension
-            reduce_size = a_shape[reduce_dim]
-            padded_size = 2 ** int(reduce_size - 1).bit_length()
+            reduce_size = a_shape[reduce_dim] # should give u say, 3
+            padded_size = 1024  # Fixed size of shared memory
 
             # Load data into shared memory
             if pos < reduce_size:
