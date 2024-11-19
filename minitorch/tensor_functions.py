@@ -454,7 +454,7 @@ def tensor(
 
 
 def grad_central_difference(
-    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
+    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-10, ind: UserIndex
 ) -> float:
     """Compute the central difference for a function."""
     x = vals[arg]
@@ -466,7 +466,7 @@ def grad_central_difference(
 
     return delta[0] / (2.0 * epsilon)
 
-
+## TODO : here's the problem
 def grad_check(f: Any, *vals: Tensor) -> None:
     """Check whether autodiff matches central difference."""
     for x in vals:
