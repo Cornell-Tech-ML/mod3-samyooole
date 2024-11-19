@@ -7,6 +7,7 @@ import numpy as np
 
 import numba
 from numba import cuda
+from minitorch.operators import prod
 from numba.cuda import jit as _jit
 from .tensor import Tensor
 from .tensor_data import (
@@ -369,7 +370,7 @@ def tensor_reduce(
         BLOCK_DIM = 1024
         
         # Compute total number of "rows" to reduce
-        total_rows = int(np.prod(out_shape))
+        total_rows = int(prod(out_shape))
         
         # Compute size of dimension being reduced
         reduce_size = a_shape[reduce_dim]
