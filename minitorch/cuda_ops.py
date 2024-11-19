@@ -338,7 +338,7 @@ def tensor_reduce(
 
             # Each thread processes one element along the reduction dimension
             reduce_size = a_shape[reduce_dim]
-            padded_size = 2 ** (reduce_size - 1).bit_length()
+            padded_size = 2 ** int(reduce_size - 1).bit_length()
 
             # Load data into shared memory
             if pos < reduce_size:
