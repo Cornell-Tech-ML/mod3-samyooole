@@ -1,5 +1,53 @@
 # MiniTorch Module 3
 
+## SIMPLE on GPU, small (100)
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET simple --RATE 0.1`
+
+Epoch  0  loss  6.323657768627313 correct 41
+Seconds per epoch: 1.9933
+Epoch  10  loss  1.9079576748223972 correct 48
+Seconds per epoch: 1.9463
+Epoch  20  loss  0.3264641917727783 correct 48
+Seconds per epoch: 1.8684
+Epoch  30  loss  0.3960136673233314 correct 50
+Seconds per epoch: 1.9524
+Epoch  40  loss  0.2769489066553676 correct 50
+Seconds per epoch: 1.8692
+Epoch  50  loss  0.013080172690561125 correct 50
+Seconds per epoch: 1.9633
+Epoch  60  loss  0.03751054304516012 correct 48
+Seconds per epoch: 1.8655
+Epoch  70  loss  0.4200003175856277 correct 50
+Seconds per epoch: 1.9429
+Epoch  80  loss  0.02668707162732932 correct 50
+Seconds per epoch: 1.9573
+Epoch  90  loss  0.1953198799413615 correct 50
+
+## SIMPLE on CPU, small (100)
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND cpu --HIDDEN 100 --DATASET simple --RATE 0.1`
+
+Epoch  0  loss  5.337089597852492 correct 38
+Seconds per epoch: 0.5354
+Epoch  10  loss  1.854732494732775 correct 49
+Seconds per epoch: 0.1142
+Epoch  20  loss  0.8974928142920144 correct 49
+Seconds per epoch: 0.1239
+Epoch  30  loss  1.0268652855890774 correct 50
+Seconds per epoch: 0.2219
+Epoch  40  loss  0.27556743207611056 correct 50
+Seconds per epoch: 0.1187
+Epoch  50  loss  0.3368159556650301 correct 50
+Seconds per epoch: 0.1140
+Epoch  60  loss  0.36473698910849367 correct 50
+Seconds per epoch: 0.1113
+Epoch  70  loss  0.08409307432645065 correct 50
+Seconds per epoch: 0.1112
+Epoch  80  loss  0.28127984139721884 correct 50
+Seconds per epoch: 0.1127
+Epoch  90  loss  0.11359037930876212 correct 50
+
 ## SPLIT on GPU, small (100)
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET split --RATE 0.05`
@@ -47,6 +95,11 @@ Seconds per epoch: 0.1124
 Epoch  80  loss  2.762627953810265 correct 50
 Seconds per epoch: 0.1172
 Epoch  90  loss  1.1744962417740878 correct 49
+
+## XOR on CPU, small (100)
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND cpu --HIDDEN 100 --DATASET xor --RATE 0.08`
+
 
 
 ## `python project/parallel_check.py` output
