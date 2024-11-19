@@ -365,30 +365,33 @@ def tensor_reduce(
         reduce_dim: int,
         reduce_value: float,
     ) -> None:
-        BLOCK_DIM = 256
+        BLOCK_DIM = 256  # Reduced from 1024
+        MAX_DIMS = 4     # Added explicit definition
+        
         cache = cuda.shared.array(BLOCK_DIM, numba.float32)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
+        
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
-
+        
         if out_pos < out_size:
-            to_index(out_pos, out_shape, out_index)
-            out_pos = index_to_position(out_index, out_strides)
-            cache[pos] = reduce_value
-
-            for i in range(pos, a_shape[reduce_dim], BLOCK_DIM):
-                to_index(i, a_shape, out_index)
-                out_index[reduce_dim] = i
+            # Safer indexing and bounds checking
+            if pos < BLOCK_DIM and out_pos * BLOCK_DIM + pos < a_shape[reduce_dim]:
+                to_index(out_pos * BLOCK_DIM + pos, a_shape, out_index)
+                out_index[reduce_dim] = out_pos * BLOCK_DIM + pos
                 a_pos = index_to_position(out_index, a_strides)
-                cache[pos] = fn(cache[pos], a_storage[a_pos])
-
+                cache[pos] = a_storage[a_pos]
+            else:
+                cache[pos] = reduce_value
+            
             cuda.syncthreads()
-
+            
+            # Parallel reduction
             for stride in range(BLOCK_DIM // 2, 0, -1):
                 if pos < stride:
                     cache[pos] = fn(cache[pos], cache[pos + stride])
-            cuda.syncthreads()
-
+                cuda.syncthreads()
+            
             if pos == 0:
                 out[out_pos] = cache[0]
 
