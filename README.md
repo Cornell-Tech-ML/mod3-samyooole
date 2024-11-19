@@ -150,6 +150,26 @@ Seconds per epoch: 0.1265
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 300 --DATASET split --RATE 0.05`
 
+Epoch  0  loss  12.348298109507168 correct 30
+Seconds per epoch: 2.0010
+Epoch  10  loss  3.155263775661756 correct 45
+Seconds per epoch: 1.9975
+Epoch  20  loss  2.4289419199181177 correct 46
+Seconds per epoch: 1.8969
+Epoch  30  loss  0.14193371910230898 correct 47
+Seconds per epoch: 2.0043
+Epoch  40  loss  1.2024471145394504 correct 46
+Seconds per epoch: 1.9131
+Epoch  50  loss  0.6738846655450477 correct 50
+Seconds per epoch: 1.9714
+Epoch  60  loss  0.7580697252459427 correct 50
+Seconds per epoch: 1.9761
+Epoch  70  loss  0.491729508771471 correct 50
+Seconds per epoch: 1.8990
+Epoch  80  loss  0.2740519379197902 correct 50
+Seconds per epoch: 2.0014
+Epoch  90  loss  0.40527495756885706 correct 50
+
 ## `python project/parallel_check.py` output
 
 MAP
