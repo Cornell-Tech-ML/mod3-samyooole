@@ -2,12 +2,9 @@
 # Currently pyright doesn't support numba.cuda
 
 from typing import Callable, Optional, TypeVar, Any
-from functools import reduce
-import numpy as np
 
 import numba
 from numba import cuda
-from minitorch.operators import prod
 from numba.cuda import jit as _jit
 from .tensor import Tensor
 from .tensor_data import (
@@ -32,11 +29,31 @@ FakeCUDAKernel = Any
 Fn = TypeVar("Fn")
 
 
-def device_jit(fn: Fn, **kwargs) -> Fn:
+def device_jit(fn: Fn, **kwargs: Any) -> Fn:
+    """Decorator to jit a function for CUDA device execution.
+
+    Args:
+        fn (Fn): Function to be compiled
+        **kwargs: Additional arguments for the jit compiler
+
+    Returns:
+        Fn: Compiled device function
+
+    """
     return _jit(device=True, **kwargs)(fn)  # type: ignore
 
 
-def jit(fn, **kwargs) -> FakeCUDAKernel:
+def jit(fn: Callable, **kwargs: Any) -> FakeCUDAKernel:
+    """Decorator to jit a function for CUDA execution.
+
+    Args:
+        fn (Callable): Function to be compiled
+        **kwargs: Additional arguments for the jit compiler
+
+    Returns:
+        FakeCUDAKernel: Compiled CUDA function
+
+    """
     return _jit(**kwargs)(fn)  # type: ignore
 
 
@@ -70,6 +87,7 @@ class CudaOps(TensorOps):
 
     @staticmethod
     def zip(fn: Callable[[float, float], float]) -> Callable[[Tensor, Tensor], Tensor]:
+        """See `tensor_ops.py`"""
         cufn: Callable[[float, float], float] = device_jit(fn)
         f = tensor_zip(cufn)
 
@@ -89,6 +107,7 @@ class CudaOps(TensorOps):
     def reduce(
         fn: Callable[[float, float], float], start: float = 0.0
     ) -> Callable[[Tensor, int], Tensor]:
+        """Reduce a tensor along a particular dimension"""
         cufn: Callable[[float, float], float] = device_jit(fn)
         f = tensor_reduce(cufn)
 
@@ -109,6 +128,7 @@ class CudaOps(TensorOps):
 
     @staticmethod
     def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
+        """Matrix multiplication function"""
         # Make these always be a 3 dimensional multiply
         both_2d = 0
         if len(a.shape) == 2:
@@ -300,6 +320,7 @@ jit_sum_practice = cuda.jit()(_sum_practice)
 
 
 def sum_practice(a: Tensor) -> TensorData:
+    """A practice function for sum"""
     (size,) = a.shape
     threadsperblock = THREADS_PER_BLOCK
     blockspergrid = (size // THREADS_PER_BLOCK) + 1
@@ -389,36 +410,7 @@ def tensor_reduce(
 
 
 def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
-    """This is a practice square MM kernel to prepare for matmul.
-
-    Given a storage `out` and two storage `a` and `b`. Where we know
-    both are shape [size, size] with strides [size, 1].
-
-    Size is always < 32.
-
-    Requirements:
-
-    * All data must be first moved to shared memory.
-    * Only read each cell in `a` and `b` once.
-    * Only write to global memory once per kernel.
-
-    Compute
-
-    ```
-     for i:
-         for j:
-              for k:
-                  out[i, j] += a[i, k] * b[k, j]
-    ```
-
-    Args:
-    ----
-        out (Storage): storage for `out` tensor.
-        a (Storage): storage for `a` tensor.
-        b (Storage): storage for `b` tensor.
-        size (int): size of the square
-
-    """
+    """A practice function for matrix mult"""
     # Shared memory allocation for the current block
     shared_a = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
     shared_b = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
@@ -466,6 +458,7 @@ jit_mm_practice = jit(_mm_practice)
 
 
 def mm_practice(a: Tensor, b: Tensor) -> TensorData:
+    """A practice function for matrix mult"""
     (size, _) = a.shape
     threadsperblock = (THREADS_PER_BLOCK, THREADS_PER_BLOCK)
     blockspergrid = 1
