@@ -96,11 +96,59 @@ Epoch  80  loss  2.762627953810265 correct 50
 Seconds per epoch: 0.1172
 Epoch  90  loss  1.1744962417740878 correct 49
 
+## XOR on GPU, small (100)
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET xor --RATE 0.08`
+
+Epoch  0  loss  14.109272570073966 correct 29
+Seconds per epoch: 1.9467
+Epoch  10  loss  2.411569617639609 correct 46
+Seconds per epoch: 1.9167
+Epoch  20  loss  5.33430881577246 correct 46
+Seconds per epoch: 1.9097
+Epoch  30  loss  3.690999380183527 correct 44
+Seconds per epoch: 1.8270
+Epoch  40  loss  0.7535501579209922 correct 46
+Seconds per epoch: 1.9059
+Epoch  50  loss  1.0581432268626099 correct 48
+Seconds per epoch: 1.8177
+Epoch  60  loss  4.140879979351141 correct 44
+Seconds per epoch: 1.9096
+Epoch  70  loss  0.8908550954241061 correct 50
+Seconds per epoch: 1.8328
+Epoch  80  loss  1.7811612304553228 correct 50
+Seconds per epoch: 1.9079
+Epoch  90  loss  1.6081980181314375 correct 50
+Seconds per epoch: 1.8269
+
 ## XOR on CPU, small (100)
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND cpu --HIDDEN 100 --DATASET xor --RATE 0.08`
 
+Epoch  0  loss  6.807421472872758 correct 34
+Seconds per epoch: 0.6575
+Epoch  10  loss  4.993390824493823 correct 45
+Seconds per epoch: 0.1155
+Epoch  20  loss  3.1433598817329567 correct 46
+Seconds per epoch: 0.1164
+Epoch  30  loss  2.070870372450276 correct 49
+Seconds per epoch: 0.1121
+Epoch  40  loss  2.596236029346202 correct 47
+Seconds per epoch: 0.1115
+Epoch  50  loss  2.216699735574525 correct 47
+Seconds per epoch: 0.1110
+Epoch  60  loss  1.8634252563728289 correct 49
+Seconds per epoch: 0.1116
+Epoch  70  loss  0.8398096490331133 correct 48
+Seconds per epoch: 0.1112
+Epoch  80  loss  1.8089226745339153 correct 47
+Seconds per epoch: 0.1133
+Epoch  90  loss  1.330039331910401 correct 50
+Seconds per epoch: 0.1265
 
+## THE BIGGER MODEL: SPLIT on GPU, big (500)
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 300 --DATASET split --RATE 0.05`
 
 ## `python project/parallel_check.py` output
 
