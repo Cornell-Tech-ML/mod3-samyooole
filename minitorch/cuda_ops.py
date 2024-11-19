@@ -276,13 +276,12 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
         
         cuda.syncthreads() # memory fence
         
-        # Parallel reduction in shared memory
-        for stride in range(BLOCK_DIM // 2, 0, -1):
-            if pos < stride:
-                cache[pos] += cache[pos + stride]
-        
+        # Simple summation for the thread
         if pos == 0:
-            out[cuda.blockIdx.x] = cache[0]
+            sum_val = 0.0
+            for idx in range(BLOCK_DIM):
+                sum_val += cache[idx]
+                out[cuda.blockIdx.x] = sum_val
 
 
 jit_sum_practice = cuda.jit()(_sum_practice)
