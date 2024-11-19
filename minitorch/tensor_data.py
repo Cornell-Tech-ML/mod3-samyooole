@@ -12,7 +12,7 @@ from typing_extensions import TypeAlias
 
 from .operators import prod
 
-MAX_DIMS = 8 # TODO: test what an appropriate maxdims is
+MAX_DIMS = 1024 # TODO: test what an appropriate maxdims is
 
 
 class IndexingError(RuntimeError):
