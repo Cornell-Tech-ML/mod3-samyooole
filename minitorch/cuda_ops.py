@@ -481,7 +481,6 @@ def _tensor_matrix_multiply(
     out: Storage,
     out_shape: Shape,
     out_strides: Strides,
-    out_size: int,
     a_storage: Storage,
     a_shape: Shape,
     a_strides: Strides,
