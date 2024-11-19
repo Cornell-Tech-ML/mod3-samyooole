@@ -340,6 +340,7 @@ def tensor_reduce(
             reduce_size = a_shape[reduce_dim] # should give u say, 3
             padded_size = 1024  # Fixed size of shared memory
 
+
             # Load data into shared memory
             if pos < reduce_size:
                 out_index[reduce_dim] = pos
@@ -355,7 +356,7 @@ def tensor_reduce(
             stride = padded_size // 2
             while stride > 0:
                 if pos < stride and pos + stride < padded_size:
-                    cache[pos] += cache[pos + stride]
+                    cache[pos] = fn(cache[pos], cache[pos + stride])
                 stride //= 2
                 cuda.syncthreads()
 
