@@ -223,7 +223,7 @@ def tensor_zip(
         
         # Motivation: one tensor could be smaller and result in many redundant global reads in a zip operation
         
-
+        """
         # Determine which tensor is smaller (we'll use shared memory for the smaller one)
         is_a_smaller = reduce(lambda x, y: x * y, a_shape) <= reduce(lambda x, y: x * y, b_shape)
 
@@ -278,7 +278,7 @@ def tensor_zip(
                 k = index_to_position(b_index, b_strides)
                 out[o] = fn(a_storage[j], b_storage[k])
 
-        """
+        
         
     return cuda.jit()(_zip)  # type: ignore
 
