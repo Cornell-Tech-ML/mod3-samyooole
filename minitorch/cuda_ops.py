@@ -529,6 +529,8 @@ def _tensor_matrix_multiply(
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
 
+    assert a_shape[-1] == b_shape[-2]
+
     
     temp = 0.0
     for k in range(0, a_shape[-1], BLOCK_DIM):
