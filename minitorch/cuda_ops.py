@@ -370,7 +370,9 @@ def tensor_reduce(
         BLOCK_DIM = 1024
         
         # Compute total number of "rows" to reduce
-        total_rows = int(prod(out_shape))
+        total_rows = 1
+        for dim in out_shape:
+            total_rows *= dim
         
         # Compute size of dimension being reduced
         reduce_size = a_shape[reduce_dim]
