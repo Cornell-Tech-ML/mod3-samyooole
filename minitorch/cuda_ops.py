@@ -345,34 +345,44 @@ def tensor_reduce(
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
 
-        if out_pos >= out_size:
-            return
+        if out_pos < out_size:
+            # Initialize shared memory cache for this thread
+            cache[pos] = reduce_value  # typically 0 for sum, 1 for multiply
 
-        cache[pos] = reduce_value
+            # Convert linear position to multi-dimensional index
+            to_index(out_pos, out_shape, out_index)
 
-        to_index(out_pos, out_shape, out_index)
+            # Copy output index to input index for all dimensions except reduce_dim
+            for dim in range(len(out_shape)):
+                a_index[dim] = out_index[dim]
 
-        for dim in range(len(out_shape)):
-            a_index[dim] = out_index[dim]
+            # Phase 1: Load and reduce elements from global memory to shared memory
+            reduce_dim_size = a_shape[reduce_dim]
+            for d in range(pos, reduce_dim_size, BLOCK_DIM):
+                a_index[reduce_dim] = d  # Update the reduction dimension
+                # Convert multi-dim index to linear position in input array
+                a_position = index_to_position(a_index, a_strides)
+                # Apply reduction function (e.g., add or multiply)
+                cache[pos] = fn(numba.float64(cache[pos]), a_storage[a_position])
 
-        reduce_dim_size = a_shape[reduce_dim]
-        for d in range(pos, reduce_dim_size, BLOCK_DIM):
-            a_index[reduce_dim] = d
-            a_position = index_to_position(a_index, a_strides)
-            cache[pos] = fn(numba.float64(cache[pos]), a_storage[a_position])
-
-        cuda.syncthreads()
-
-        s = BLOCK_DIM // 2
-        while s > 0:
-            if pos < s:
-                cache[pos] = fn(cache[pos], cache[pos + s])
+            # Ensure all threads finished writing to shared memory
             cuda.syncthreads()
-            s //= 2
 
-        if pos == 0:
-            out_pos = index_to_position(out_index, out_strides)
-            out[out_pos] = cache[0]
+            # Phase 2: Parallel reduction within shared memory using tree reduction
+            s = BLOCK_DIM // 2
+            while s > 0:
+                if pos < s:
+                    # Combine elements that are 's' positions apart
+                    cache[pos] = fn(cache[pos], cache[pos + s])
+                # Synchronize before next iteration
+                cuda.syncthreads()
+                s //= 2  # Halve the stride
+
+            # Phase 3: Write final result to global memory
+            if pos == 0:
+                # Only thread 0 writes the final reduced value
+                out_pos = index_to_position(out_index, out_strides)
+                out[out_pos] = cache[0]
 
 
     return jit(_reduce)  # type: ignore
