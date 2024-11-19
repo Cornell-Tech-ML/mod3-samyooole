@@ -421,8 +421,8 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
     """
     
     # Shared memory allocation for the current block
-    shared_a = cuda.shared.array(shape=(32, 32))
-    shared_b = cuda.shared.array(shape=(32, 32))
+    shared_a = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
+    shared_b = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
 
     tx = cuda.threadIdx.x
     ty = cuda.threadIdx.y
