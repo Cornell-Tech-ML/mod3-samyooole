@@ -419,39 +419,46 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
 
     """
-    BLOCK_DIM=32
-    
     # Shared memory allocation for the current block
     shared_a = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
     shared_b = cuda.shared.array(shape=(32, 32), dtype=numba.float64)
 
-    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    tx = cuda.threadIdx.x
+    ty = cuda.threadIdx.y
+    bx = cuda.blockIdx.x
+    by = cuda.blockIdx.y
 
-    withinthread_i = cuda.threadIdx.x
-    withinthread_j = cuda.threadIdx.y
+    row = by * cuda.blockDim.y + ty  # Output row index
+    col = bx * cuda.blockDim.x + tx  # Output column index
 
-    # accumulator
-    acc = numba.float64(0.0)
+    if row < size and col < size:
+        # Temporary accumulator for the dot product
+        temp = numba.float64(0.0)
 
-    for k in range((size + BLOCK_DIM - 1) // BLOCK_DIM):
-        if k * BLOCK_DIM + withinthread_j < size and i < size:
-            shared_a[withinthread_i, withinthread_j] = a[i * size + k * BLOCK_DIM + withinthread_j]
-        else:
-            shared_a[withinthread_i, withinthread_j] = 0.0
+        for block_k in range(0, size, cuda.blockDim.x):
+            # Load the relevant sub-blocks into shared memory
+            if block_k + tx < size and row < size:
+                shared_a[ty, tx] = a[row * size + (block_k + tx)]
+            else:
+                shared_a[ty, tx] = 0.0
 
-        if k * BLOCK_DIM + withinthread_i < size and j < size:
-            shared_b[withinthread_i, withinthread_j] = b[j + (BLOCK_DIM * k + withinthread_i) * size]
-        else:
-            shared_b[withinthread_i, withinthread_j] = 0.0
+            if block_k + ty < size and col < size:
+                shared_b[ty, tx] = b[(block_k + ty) * size + col]
+            else:
+                shared_b[ty, tx] = 0.0
 
-        for med in range(BLOCK_DIM):
-            acc += shared_a[withinthread_i, med] * shared_b[med, withinthread_j]
+            # Synchronize threads to ensure data is loaded
+            cuda.syncthreads()
 
-        cuda.syncthreads()
+            # Perform multiplication for this sub-block
+            for k in range(cuda.blockDim.x):
+                temp += shared_a[ty, k] * shared_b[k, tx]
 
-    if i < size and j < size:
-        out[i * size + j] = acc
+            # Synchronize again to prevent overwriting shared memory prematurely
+            cuda.syncthreads()
+
+        # Write the final result back to global memory
+        out[row * size + col] = temp
 
 
 
