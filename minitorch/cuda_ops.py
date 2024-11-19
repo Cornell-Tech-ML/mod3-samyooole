@@ -222,8 +222,7 @@ def tensor_zip(
     ) -> None:
         
         # Motivation: one tensor could be smaller and result in many redundant global reads in a zip operation
-        
-        """
+        """ #this idea doesn't work super well though!
         # Determine which tensor is smaller (we'll use shared memory for the smaller one)
         is_a_smaller = reduce(lambda x, y: x * y, a_shape) <= reduce(lambda x, y: x * y, b_shape)
 
@@ -378,7 +377,7 @@ def tensor_reduce(
         reduce_size = a_shape[reduce_dim]
         
         # Allocate shared memory (padded to power of 2 if needed)
-        padded_size = 2 ** (reduce_size - 1).bit_length()
+        padded_size = 2 ** (reduce_size - 1)
         cache = cuda.shared.array(padded_size, numba.float64)
         
         # Block-level parallelism for different "rows"
