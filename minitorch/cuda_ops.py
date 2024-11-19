@@ -441,7 +441,7 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
             shared_a[withinthread_i, withinthread_j] = 0.0
 
         if k * BLOCK_DIM + withinthread_i < size and j < size:
-            shared_b[withinthread_i, withinthread_j] = b[j * size + k * BLOCK_DIM + withinthread_i]
+            shared_b[withinthread_i, withinthread_j] = b[j + (BLOCK_DIM * k + withinthread_i) * size]
         else:
             shared_b[withinthread_i, withinthread_j] = 0.0
 
