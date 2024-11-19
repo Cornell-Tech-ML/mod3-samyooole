@@ -553,5 +553,45 @@ def _tensor_matrix_multiply(
         out[batch * out_strides[0] + i * out_strides[-2] + j * out_strides[-1]] = temp
 
 
+def tensor_matrix_multiply(out, a, b):
+    """
+    Wrapper for the _tensor_matrix_multiply kernel.
+    Computes the tensor matrix multiplication of `a` and `b` and stores in `out`.
 
-tensor_matrix_multiply = jit(_tensor_matrix_multiply)
+    Args:
+        out: Output tensor with preallocated storage.
+        a: Input tensor `a`.
+        b: Input tensor `b`.
+    """
+    # Extract shapes and strides
+    out_shape = out.shape
+    out_strides = out.strides
+    out_size = out.size
+
+    a_shape = a.shape
+    a_strides = a.strides
+
+    b_shape = b.shape
+    b_strides = b.strides
+
+    # Compute grid and block dimensions
+    BLOCK_DIM = 32
+    grid_x = (out_shape[-2] + BLOCK_DIM - 1) // BLOCK_DIM
+    grid_y = (out_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM
+    grid_z = out_shape[0]  # Batch dimension
+    grid_dim = (grid_x, grid_y, grid_z)
+    block_dim = (BLOCK_DIM, BLOCK_DIM, 1)
+
+    # Launch kernel
+    _tensor_matrix_multiply[grid_dim, block_dim](
+        out,
+        out_shape,
+        out_strides,
+        out_size,
+        a,
+        a_shape,
+        a_strides,
+        b,
+        b_shape,
+        b_strides,
+    )
