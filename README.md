@@ -1,5 +1,25 @@
 # MiniTorch Module 3
 
+## SPLIT on GPU
+
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET split --RATE 0.05`
+
+Time per epoch:
+
+Epoch  0  loss  6.883706312519709 correct 29
+Epoch  10  loss  2.9230063095761563 correct 41
+Epoch  20  loss  3.664909083632173 correct 44
+Epoch  30  loss  3.1416024456224823 correct 49
+Epoch  40  loss  0.6356824247725283 correct 50
+Epoch  50  loss  1.0563079298847204 correct 49
+Epoch  60  loss  1.2196865054624122 correct 50
+Epoch  70  loss  1.0536564699070163 correct 50
+Epoch  80  loss  0.4172288778711962 correct 50
+Epoch  90  loss  0.9439167559134193 correct 50
+Epoch  100  loss  0.7629942270531591 correct 50
+
+
+
 ## `python project/parallel_check.py` output
 
 MAP

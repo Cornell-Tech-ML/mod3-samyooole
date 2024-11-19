@@ -4,6 +4,7 @@ import numba
 
 import minitorch
 
+import time
 datasets = minitorch.datasets
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 if numba.cuda.is_available():
@@ -64,7 +65,7 @@ class FastTrain:
     def run_many(self, X):
         return self.model.forward(minitorch.tensor(X, backend=self.backend))
 
-    def train(self, data, learning_rate, max_epochs=500, log_fn=default_log_fn):
+    def train(self, data, learning_rate, max_epochs=100, log_fn=default_log_fn):
         self.model = Network(self.hidden_layers, self.backend)
         optim = minitorch.SGD(self.model.parameters(), learning_rate)
         BATCH = 10
@@ -94,6 +95,16 @@ class FastTrain:
 
             losses.append(total_loss)
             # Logging
+
+            # Logging time for every 10 epochs
+            if epoch % 10 == 0:
+                if epoch > 0:  # Not the first epoch
+                    end_time = time.time()
+                    seconds_per_epoch = (end_time - start_time) / 10
+                    print(f"Seconds per epoch: {seconds_per_epoch:.4f}")
+                start_time = time.time()
+
+
             if epoch % 10 == 0 or epoch == max_epochs:
                 X = minitorch.tensor(data.X, backend=self.backend)
                 y = minitorch.tensor(data.y, backend=self.backend)
