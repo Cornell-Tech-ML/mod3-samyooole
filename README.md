@@ -126,7 +126,7 @@
 | 80    | 1.8089 | 47      | 0.1133            |
 | 90    | 1.3300 | 50      | 0.1265            |
 
-## THE BIGGER MODEL: SPLIT on GPU, big (500)
+## THE BIGGER MODEL: SPLIT on GPU, big (200)
 
 `!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 200 --DATASET split --RATE 0.05`
 
