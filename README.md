@@ -128,7 +128,7 @@
 
 ## THE BIGGER MODEL: SPLIT on GPU, big (500)
 
-`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 300 --DATASET split --RATE 0.05`
+`!cd $DIR; PYTHONPATH=/content/$DIR python3 project/run_fast_tensor.py --BACKEND gpu --HIDDEN 200 --DATASET split --RATE 0.05`
 
 | Epoch | Loss | Correct | Seconds per epoch |
 |-------|------|---------|-------------------|
