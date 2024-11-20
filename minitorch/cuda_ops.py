@@ -546,4 +546,4 @@ def _tensor_matrix_multiply(
         out[batch * out_strides[0] + i * out_strides[-2] + j * out_strides[-1]] = temp
 
 
-tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
+tensor_matrix_multiply = jit(_tensor_matrix_multiply)
